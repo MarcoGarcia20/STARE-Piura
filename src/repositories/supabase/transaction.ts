@@ -3,24 +3,31 @@ import type { FinancialTransaction, CreateTransactionDTO, FundBalances } from '@
 import { fetchTransactions, createTransaction } from '@/lib/supabase/transactions';
 
 function calcBalances(transactions: FinancialTransaction[]): FundBalances {
-  let cajaChica = 0;
-  let fondoAdquisicion = 0;
+  const balances: FundBalances = {
+    general: 0,
+    desayunos: 0,
+    almuerzos: 0,
+    cenas: 0,
+    eventos_especiales: 0,
+  };
 
   for (const tx of transactions) {
     const monto = Number(tx.monto);
-    if (tx.fondo === 'caja_chica') {
-      cajaChica += tx.tipo === 'ingreso' ? monto : -monto;
-    } else if (tx.fondo === 'fondo_adquisicion') {
-      fondoAdquisicion += tx.tipo === 'ingreso' ? monto : -monto;
+    if (tx.tipo === 'ingreso') {
+      balances.general += monto;
+      if (tx.fondo && tx.fondo in balances) {
+        balances[tx.fondo as keyof FundBalances] += monto;
+      }
+    } else {
+      balances.general -= monto;
+      if (tx.fondo && tx.fondo in balances) {
+        balances[tx.fondo as keyof FundBalances] -= monto;
+      }
     }
   }
 
-  return {
-    caja_chica: Math.max(0, cajaChica),
-    fondo_adquisicion: Math.max(0, fondoAdquisicion),
-  };
+  return balances;
 }
-
 
 export class SupabaseTransactionRepository implements ITransactionRepository {
   async getAll(): Promise<FinancialTransaction[]> {
