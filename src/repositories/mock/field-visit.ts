@@ -1,12 +1,8 @@
 /**
  * @file src/repositories/mock/field-visit.ts
  * @description Implementación mock del repositorio de Visitas de Campo.
- * Simula el comportamiento offline-first: acepta el array de evidencias
+ * Simula el comportamiento offline-first: acepta URLs de evidencia
  * (ya "subidas" ficticiamente) y actualiza el estado del evento.
- *
- * El schema del body refleja el contrato del backend:
- *  - POST /api/events/{id}/evidences → `{ evidences: [{ tipo, url, descripcion }] }`
- *  - PUT  /api/events/{id}/complete  → `{ evidences: [...] }`
  */
 
 import type { IFieldVisitRepository } from '../contracts/field-visit';
@@ -48,15 +44,14 @@ export class MockFieldVisitRepository implements IFieldVisitRepository {
       throw new Error(`Evento con id ${eventId} no encontrado`);
     }
 
-    // Registrar todas las evidencias del array
-    for (const evidenceItem of dto.evidences) {
+    // Registrar evidencias automáticamente desde las URLs del DTO
+    for (const url of dto.evidencia_urls) {
       MockFieldVisitRepository.evidences.push({
         id: `ev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         event_id: eventId,
         user_id: 'mock-current-user',
-        tipo: evidenceItem.tipo,
-        url: evidenceItem.url,
-        descripcion: evidenceItem.descripcion,
+        tipo: 'foto',
+        url,
         created_at: new Date().toISOString(),
       });
     }
