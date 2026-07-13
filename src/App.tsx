@@ -8,8 +8,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { ToastProvider } from '@/components/ui';
+import { ToastProvider, AppleSpinner } from '@/components/ui';
 import { AppRouter } from '@/app/router/AppRouter';
 import { Login } from '@/pages/Login';
 import { Landing } from '@/pages/Landing';
@@ -28,7 +27,7 @@ export default function App() {
   if (!initialized) {
     return (
       <div className="min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-white font-sans">
-        <Loader2 className="w-10 h-10 animate-spin text-teal-400 mb-4" />
+        <AppleSpinner size="lg" color="text-teal-400" className="mb-4" />
         <p className="text-xs text-slate-400 font-mono tracking-widest uppercase">
           Inicializando STARE...
         </p>

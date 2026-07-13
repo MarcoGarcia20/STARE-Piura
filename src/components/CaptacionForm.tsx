@@ -25,6 +25,124 @@ import { useEvents } from '../features/events';
 import { useDonations } from '../features/donations';
 import { useMypes } from '../features/mypes';
 
+// ─── Componente Local: Canvas de Confeti de Celebración a 60 FPS ───────────────
+const ConfettiCanvas: React.FC<{ active: boolean; onComplete: () => void }> = ({ active, onComplete }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!active) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const colors = [
+      '#14b8a6', // Teal
+      '#0d9488', // Teal oscuro
+      '#f59e0b', // Amber
+      '#d97706', // Amber oscuro
+      '#3b82f6', // Indigo
+      '#10b981', // Emerald
+    ];
+
+    const particles = Array.from({ length: 85 }, () => {
+      const radius = Math.random() * 5 + 3.5;
+      return {
+        x: Math.random() * width,
+        y: height + 10,
+        radius,
+        speedY: -(Math.random() * 9 + 8),
+        speedX: Math.random() * 5 - 2.5,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rotation: Math.random() * 360,
+        rotationSpeed: Math.random() * 9 - 4.5,
+        opacity: 1.0,
+        gravity: 0.22,
+      };
+    });
+
+    let animationId: number;
+    let framesElapsed = 0;
+
+    const render = () => {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, width, height);
+
+      let activeParticles = 0;
+
+      particles.forEach((p) => {
+        if (p.opacity <= 0) return;
+        activeParticles++;
+
+        // Movimiento físico
+        p.speedY += p.gravity;
+        p.y += p.speedY;
+        p.x += p.speedX;
+        p.rotation += p.rotationSpeed;
+
+        if (p.speedY > 0) {
+          p.opacity -= 0.014; // desvanecer al descender
+        }
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.globalAlpha = p.opacity;
+
+        ctx.beginPath();
+        // Rectángulo rotante de confeti
+        ctx.rect(-p.radius, -p.radius / 1.5, p.radius * 2, p.radius * 1.3);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+        ctx.restore();
+      });
+
+      framesElapsed++;
+
+      if (activeParticles > 0 && framesElapsed < 180) {
+        animationId = requestAnimationFrame(render);
+      } else {
+        onComplete();
+      }
+    };
+
+    render();
+
+    const handleResize = () => {
+      if (!canvas || !ctx) return;
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [active, onComplete]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 w-full h-full pointer-events-none z-[110]"
+      style={{ width: '100vw', height: '100vh' }}
+    />
+  );
+};
+
 interface CaptacionFormProps {
   events?: SocialEvent[];
   onRegisterDonation?: (
@@ -75,6 +193,7 @@ export const CaptacionForm: React.FC<CaptacionFormProps> = ({
   const [phone, setPhone] = useState('');
   const [district, setDistrict] = useState<PiuraDistrict>('Piura Centro');
   const [mypeCategory, setMypeCategory] = useState('Bodega');
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // Trigger auto-fill when a Mype is pre-selected
   useEffect(() => {
@@ -285,6 +404,7 @@ export const CaptacionForm: React.FC<CaptacionFormProps> = ({
         }
       );
 
+      setShowConfetti(true);
       setSuccessMessage(`¡Aporte en Especie de "${mypeName}" registrado con éxito en el STARE!`);
       setItemsList([]);
 
@@ -322,6 +442,7 @@ export const CaptacionForm: React.FC<CaptacionFormProps> = ({
         }
       );
 
+      setShowConfetti(true);
       setSuccessMessage(`¡Aporte Financiero de S/. ${Number(cashAmount).toFixed(2)} registrado y acreditado con éxito en ${fundDestination === 'caja_chica' ? 'Caja Chica' : 'Fondo de Adquisición'}!`);
       setCashAmount('');
       setTxNumber('');
@@ -926,6 +1047,7 @@ export const CaptacionForm: React.FC<CaptacionFormProps> = ({
 
       </form>
 
+      {showConfetti && <ConfettiCanvas active={showConfetti} onComplete={() => setShowConfetti(false)} />}
     </div>
   );
 };

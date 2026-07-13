@@ -86,4 +86,4 @@ export interface MypeProfile {
   contactPerson: string;
   registeredAt: string;
 }
-
+export type { User, UserRole, EvidenceTipo } from './types/index';

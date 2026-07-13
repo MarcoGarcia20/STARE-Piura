@@ -13,6 +13,7 @@ import {
   BarChart3,
   CalendarDays,
   Building2,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { springs } from '@/animations/variants';
@@ -43,7 +44,7 @@ const navItems: Array<{
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function BottomNav({ activeScreen, onNavigate }: BottomNavProps) {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
 
   const filteredNavItems = navItems.filter((item) => {
     if (item.id === 'balance') {
@@ -51,6 +52,13 @@ export function BottomNav({ activeScreen, onNavigate }: BottomNavProps) {
     }
     return true;
   });
+
+  const handleLogoutClick = () => {
+    const confirmLogout = window.confirm('¿Está seguro de que desea cerrar la sesión en STARE Piura?');
+    if (confirmLogout) {
+      logout();
+    }
+  };
 
   return (
     <nav
@@ -120,6 +128,25 @@ export function BottomNav({ activeScreen, onNavigate }: BottomNavProps) {
             </motion.button>
           );
         })}
+
+        {/* Botón de Cierre de Sesión Móvil */}
+        <motion.button
+          onClick={handleLogoutClick}
+          whileTap={{ scale: 0.92, transition: springs.stiff }}
+          className={cn(
+            'relative flex-1 flex flex-col items-center justify-center gap-1',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500',
+            'transition-colors duration-150 text-red-500/80 hover:text-red-600'
+          )}
+          aria-label="Cerrar sesión"
+        >
+          <div className="relative z-10">
+            <LogOut className="w-5 h-5" aria-hidden />
+          </div>
+          <span className="relative z-10 text-[10px] leading-none font-medium">
+            Salir
+          </span>
+        </motion.button>
       </div>
     </nav>
   );

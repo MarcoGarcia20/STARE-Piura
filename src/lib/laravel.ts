@@ -11,17 +11,6 @@
  */
 
 import { config } from './config';
-<<<<<<< Updated upstream
-import { apiFetch } from './api-client';
-
-class LaravelApiClient {
-  async request<T>(path: string, options: RequestInit = {}): Promise<T> {
-    if (!config.laravelApiUrl) {
-      throw new Error('La URL de la API de Laravel (VITE_LARAVEL_API_URL) no está configurada.');
-    }
-
-    return apiFetch<T>(path, options);
-=======
 import { apiFetch, type ApiFetchOptions } from './api-client';
 
 /**
@@ -36,7 +25,6 @@ class LaravelApiClient {
   /** @deprecated Usar `apiGet` de `@/lib/api-client`. */
   async get<T>(path: string, options?: ApiFetchOptions): Promise<T> {
     return apiFetch<T>(path, { ...options, method: 'GET' });
->>>>>>> Stashed changes
   }
 
   /** @deprecated Usar `apiPost` de `@/lib/api-client`. */

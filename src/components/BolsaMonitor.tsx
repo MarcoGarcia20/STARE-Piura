@@ -20,6 +20,7 @@ import {
   Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { CanvasProgress } from '@/components/ui';
 
 import { useEvents } from '../features/events';
 import { useDonations } from '../features/donations';
@@ -253,32 +254,41 @@ export const BolsaMonitor: React.FC<BolsaMonitorProps> = ({
           {/* DYNAMIC PROGRESS BARS */}
           <div className="space-y-4">
             {/* 1. Global Coverage (Financial assessment) */}
-            <div>
-              <div className="flex justify-between items-end mb-1.5">
-                <div>
-                  <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider block">
-                    Progreso de Cobertura Financiera
-                  </span>
-                  <p className="text-[10px] text-slate-400 font-sans mt-0.5 leading-none">
-                    Monto valorizado acumulado vs. Presupuesto meta de Bolsa
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm font-mono font-bold text-slate-900">
-                    {activeStats.costPct.toFixed(1)}%
-                  </span>
-                  <p className="text-[10px] text-emerald-600 font-mono font-bold mt-0.5">
-                    S/. {activeStats.totalCurrentCost.toFixed(0)} / S/. {activeStats.totalTargetCost.toFixed(0)}
-                  </p>
-                </div>
-              </div>
-              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(activeStats.costPct, 100)}%` }}
-                  transition={{ duration: 0.6, ease: 'easeOut' }}
-                  className={`h-full rounded-full ${getProgressColor(activeStats.costPct)}`}
+            <div className="flex items-center gap-5 bg-slate-50/50 border border-slate-100/80 p-4 rounded-2xl shadow-2xs hover:shadow-xs transition-all">
+              <div className="shrink-0 bg-white p-2 rounded-xl border border-slate-100 shadow-3xs">
+                <CanvasProgress 
+                  percentage={activeStats.costPct} 
+                  color={activeStats.costPct >= 100 ? '#0d9488' : activeStats.costPct >= 50 ? '#0f766e' : '#b45309'} 
+                  size={65} 
                 />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-end mb-1">
+                  <div>
+                    <span className="text-[10px] font-mono font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider block">
+                      Progreso de Cobertura Financiera
+                    </span>
+                    <p className="text-[9px] text-slate-400 font-sans mt-0.5 leading-none">
+                      Monto valorizado vs. Presupuesto meta de Bolsa
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-mono font-black text-slate-900 leading-none">
+                      {activeStats.costPct.toFixed(1)}%
+                    </span>
+                    <p className="text-[9px] text-emerald-700 font-mono font-bold mt-0.5 leading-none">
+                      S/. {activeStats.totalCurrentCost.toFixed(0)} / S/. {activeStats.totalTargetCost.toFixed(0)}
+                    </p>
+                  </div>
+                </div>
+                <div className="w-full h-2 bg-slate-205 bg-slate-200/60 rounded-full overflow-hidden mt-2">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(activeStats.costPct, 100)}%` }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    className={`h-full rounded-full ${getProgressColor(activeStats.costPct)}`}
+                  />
+                </div>
               </div>
             </div>
 

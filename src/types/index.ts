@@ -309,21 +309,6 @@ export interface CreateSupplyItemDTO {
 
 export type UpdateSupplyItemDTO = Partial<Pick<SupplyItem, 'cantidad_cubierta' | 'cantidad_requerida' | 'precio_unitario_estimado'>>;
 
-<<<<<<< Updated upstream
-// ─── VisitEvidence (Evidencias de Visitas de Campo) ──────────────────────────
-
-export type EvidenceTipo = 'foto_canasta' | 'foto_evidencia' | 'firma';
-
-export interface VisitEvidence {
-  id: string;
-  event_id: string;
-  tipo: EvidenceTipo;
-  url: string;
-  descripcion?: string;
-  created_at: string;
-}
-
-=======
 /**
  * DTO para el RPC `POST /api/supply-items/cubrir`.
  * Cubre (o incrementa la cobertura de) un ítem de suministros.
@@ -357,7 +342,6 @@ export interface CreateSupplyBagDTO {
 
 export type UpdateSupplyBagDTO = Partial<Pick<SupplyBag, 'nombre' | 'descripcion' | 'status'>>;
 
->>>>>>> Stashed changes
 // ─── Notification ─────────────────────────────────────────────────────────────
 
 export type NotificationType =
@@ -381,7 +365,9 @@ export interface Notification {
 
 // ─── Evidence (Evidencias de Visita de Campo) ────────────────────────────────
 
-export type EvidenceType = 'foto' | 'video' | 'documento';
+export type EvidenceType = 'foto_canasta' | 'foto_evidencia' | 'firma';
+export type EvidenceTipo = EvidenceType;
+
 
 export interface Evidence {
   id: string;
@@ -402,14 +388,22 @@ export interface CreateEvidenceDTO {
   descripcion?: string;
 }
 
+/** Estructura que el backend valida dentro del array `evidences`. */
+export interface EvidencePayloadItem {
+  tipo: EvidenceType;
+  url: string;
+  descripcion?: string;
+}
+
 /**
  * DTO para `PUT /api/events/{id}/complete`.
  * El frontend ya realizó la subida de los blobs a Supabase Storage
- * y pasa las URLs públicas resultantes en este DTO.
+ * y pasa los objetos de evidencia en el array que el backend espera.
  */
 export interface CompleteEventDTO {
-  /** URLs públicas de los archivos de evidencia subidos al Storage. */
-  evidencia_urls: string[];
+  /** Array de evidencias a registrar (ya subidas al Storage). */
+  evidences: EvidencePayloadItem[];
+  /** Notas de cierre de la visita (campo libre, opcional). */
   notas_cierre?: string;
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SocialEvent, BolsaItem, FundBalances } from '../types';
 import { 
   Building2, 
@@ -21,6 +21,42 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useEvents } from '../features/events';
 import { useFinance } from '../features/finance';
+
+// ─── Componente Local: Contador Animado en Soles ───────────────────────────────
+const AnimatedCounter: React.FC<{ value: number }> = ({ value }) => {
+  const [displayValue, setDisplayValue] = useState(value);
+  const previousValueRef = useRef(value);
+
+  useEffect(() => {
+    const startValue = previousValueRef.current;
+    const endValue = value;
+    if (startValue === endValue) return;
+
+    const duration = 600; // ms
+    const startTime = performance.now();
+    let animationId: number;
+
+    const updateNumber = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = progress * (2 - progress); // EaseOutQuad
+
+      const current = startValue + (endValue - startValue) * easeProgress;
+      setDisplayValue(current);
+
+      if (progress < 1) {
+        animationId = requestAnimationFrame(updateNumber);
+      } else {
+        previousValueRef.current = endValue;
+      }
+    };
+
+    animationId = requestAnimationFrame(updateNumber);
+    return () => cancelAnimationFrame(animationId);
+  }, [value]);
+
+  return <span>S/. {displayValue.toFixed(2)}</span>;
+};
 
 interface BalanceBrechasProps {
   events?: SocialEvent[];
@@ -47,7 +83,12 @@ export const BalanceBrechas: React.FC<BalanceBrechasProps> = ({
   const { balances: hookBalances } = useFinance();
 
   const events = propEvents || hookEvents || [];
-  const balances = { cajaChica: 0, fondoAdquisicion: 0, ...(propBalances || hookBalances) };
+  const rawBalances = propBalances || hookBalances;
+  const balances = {
+    cajaChica: rawBalances ? ('caja_chica' in rawBalances ? rawBalances.caja_chica : (rawBalances as any).cajaChica) : 0,
+    fondoAdquisicion: rawBalances ? ('fondo_adquisicion' in rawBalances ? rawBalances.fondo_adquisicion : (rawBalances as any).fondoAdquisicion) : 0,
+  };
+
   const selectedEventId = propSelectedEventId !== undefined ? propSelectedEventId : hookSelectedId;
   const onSelectEvent = propOnSelectEvent || hookSelectEvent;
 
@@ -125,6 +166,11 @@ export const BalanceBrechas: React.FC<BalanceBrechasProps> = ({
 
   return (
     <div className="space-y-6">
+      <style>{`
+        @keyframes shimmer-effect {
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
       
       {/* 1. SECCIÓN: CABECERA Y SELECTOR DE EVENTO + FONDOS DISPONIBLES */}
       <div className="relative overflow-hidden bg-slate-900 text-white rounded-3xl p-6 shadow-md border-b-4 border-slate-950">
@@ -204,8 +250,8 @@ export const BalanceBrechas: React.FC<BalanceBrechasProps> = ({
                 <span className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-wider block">
                   Caja Chica Logística
                 </span>
-                <span className="text-xl font-sans font-black text-white block mt-1 tracking-tight">
-                  S/. {(balances?.cajaChica ?? 0).toFixed(2)}
+                <span className="text-xl font-mono font-black text-white block mt-1 tracking-tight">
+                  <AnimatedCounter value={balances?.cajaChica ?? 0} />
                 </span>
               </div>
               <p className="text-[9px] text-slate-400 leading-normal mt-3 bg-slate-800/40 p-1.5 rounded border border-slate-800">
@@ -222,8 +268,8 @@ export const BalanceBrechas: React.FC<BalanceBrechasProps> = ({
                 <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
                   Adquisición Directa
                 </span>
-                <span className="text-xl font-sans font-black text-amber-400 block mt-1 tracking-tight">
-                  S/. {(balances?.fondoAdquisicion ?? 0).toFixed(2)}
+                <span className="text-xl font-mono font-black text-amber-400 block mt-1 tracking-tight">
+                  <AnimatedCounter value={balances?.fondoAdquisicion ?? 0} />
                 </span>
               </div>
               <p className="text-[9px] text-slate-400 leading-normal mt-3 bg-slate-800/40 p-1.5 rounded border border-slate-800">
@@ -314,9 +360,12 @@ export const BalanceBrechas: React.FC<BalanceBrechasProps> = ({
                     <tr 
                       key={item.id}
                       onClick={() => !isSatisfied && setSelectedItemId(item.id)}
-                      className={`transition-all hover:bg-slate-50/80 group ${
-                        !isSatisfied ? 'cursor-pointer' : 'opacity-85 hover:bg-slate-50/30'
+                      className={`transition-all duration-500 hover:bg-slate-50/80 group ${
+                        !isSatisfied 
+                          ? 'cursor-pointer' 
+                          : 'opacity-85 hover:bg-emerald-50/20 bg-emerald-500/[0.02]'
                       } ${isSelected ? 'bg-indigo-50/60 border-l-4 border-indigo-600' : ''}`}
+                      style={isSatisfied ? { transition: 'background-color 1s ease-in-out' } : undefined}
                     >
                       {/* Name of item */}
                       <td className="py-3 px-4">
@@ -348,11 +397,23 @@ export const BalanceBrechas: React.FC<BalanceBrechasProps> = ({
                           <span className="font-mono text-[10px] font-bold text-slate-500 shrink-0">
                             {(percentCollected ?? 0).toFixed(0)}%
                           </span>
-                          <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden hidden sm:block">
+                          <div className="w-12 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden hidden sm:block relative">
                             <div 
-                              className={`h-full rounded-full ${isSatisfied ? 'bg-emerald-500' : 'bg-amber-400'}`} 
+                              className={`h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden ${
+                                isSatisfied 
+                                  ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' 
+                                  : 'bg-amber-400'
+                              }`} 
                               style={{ width: `${percentCollected}%` }}
-                            />
+                            >
+                              <div 
+                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                                style={{
+                                  transform: 'translateX(-100%)',
+                                  animation: 'shimmer-effect 1.6s infinite',
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -441,14 +502,14 @@ export const BalanceBrechas: React.FC<BalanceBrechasProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="text-indigo-200">Costo Local Unitario (Piura):</span>
                       <span className="font-mono text-white">
-                        S/. {(selectedItem?.unitPriceEstimate ?? 0).toFixed(2)}
+                        <AnimatedCounter value={selectedItem?.unitPriceEstimate ?? 0} />
                       </span>
                     </div>
 
                     <div className="border-t border-dashed border-indigo-750 pt-2 flex items-center justify-between text-sm font-bold">
                       <span className="text-white">Costo Total Compra:</span>
                       <span className="font-mono font-black text-amber-350 text-white leading-none text-base">
-                        S/. {(((selectedItem?.targetQty ?? 0) - (selectedItem?.currentQty ?? 0)) * (selectedItem?.unitPriceEstimate ?? 0)).toFixed(2)}
+                        <AnimatedCounter value={((selectedItem?.targetQty ?? 0) - (selectedItem?.currentQty ?? 0)) * (selectedItem?.unitPriceEstimate ?? 0)} />
                       </span>
                     </div>
 
@@ -459,7 +520,7 @@ export const BalanceBrechas: React.FC<BalanceBrechasProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="text-indigo-200">Fondo Adquisición Disponible:</span>
                       <span className={`font-mono font-bold ${(balances?.fondoAdquisicion ?? 0) >= (((selectedItem?.targetQty ?? 0) - (selectedItem?.currentQty ?? 0)) * (selectedItem?.unitPriceEstimate ?? 0)) ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        S/. {(balances?.fondoAdquisicion ?? 0).toFixed(2)}
+                        <AnimatedCounter value={balances?.fondoAdquisicion ?? 0} />
                       </span>
                     </div>
                   </div>
@@ -475,7 +536,10 @@ export const BalanceBrechas: React.FC<BalanceBrechasProps> = ({
                   ) : (
                     <div className="p-2.5 bg-emerald-950/40 border border-emerald-900/40 text-emerald-250 rounded-xl flex items-center gap-1.5 text-[10px] text-emerald-200">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>Saldo suficiente. El costo se debitará en S/. {(((selectedItem?.targetQty ?? 0) - (selectedItem?.currentQty ?? 0)) * (selectedItem?.unitPriceEstimate ?? 0)).toFixed(2)}</span>
+                      <span className="flex items-center gap-1">
+                        Saldo suficiente. El costo se debitará en 
+                        <AnimatedCounter value={((selectedItem?.targetQty ?? 0) - (selectedItem?.currentQty ?? 0)) * (selectedItem?.unitPriceEstimate ?? 0)} />
+                      </span>
                     </div>
                   )}
 

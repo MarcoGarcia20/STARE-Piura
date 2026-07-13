@@ -75,21 +75,25 @@ export const springs = {
 export const pageVariants: Variants = {
   initial: {
     opacity: 0,
-    y: 16,
+    x: 16,
+    filter: 'blur(4px)',
     scale: 0.995,
   },
   animate: {
     opacity: 1,
-    y: 0,
+    x: 0,
+    filter: 'blur(0px)',
     scale: 1,
     transition: {
       ...springs.soft,
       opacity: { duration: 0.2, ease: easeOut },
+      filter: { duration: 0.15, ease: easeOut },
     },
   },
   exit: {
     opacity: 0,
-    y: -8,
+    x: -16,
+    filter: 'blur(4px)',
     scale: 0.995,
     transition: {
       duration: 0.15,

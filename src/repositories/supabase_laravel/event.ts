@@ -119,12 +119,20 @@ export class SupabaseLaravelEventRepository implements IEventRepository {
 
   /**
    * RPC: Cubre (incrementa la cobertura de) un ítem de suministros.
-   * Corresponde al endpoint `POST /api/supply-items/cubrir`.
+   * Corresponde al endpoint `POST /api/supply-items/{id}/cubrir`.
+   *
+   * El backend recibe el ID del ítem en la URL (no en el cuerpo)
+   * y ejecuta una función RPC transaccional en Supabase para evitar
+   * condiciones de carrera entre múltiples voluntarios.
    *
    * @param dto DTO con el ID del ítem y la cantidad a cubrir.
    * @returns El ítem de suministros con la cobertura actualizada.
    */
   async coverSupplyItem(dto: CoverSupplyItemDTO): Promise<SupplyItem> {
-    return apiPost<SupplyItem>('/api/supply-items/cubrir', dto);
+    // El ID va en la URL; el backend ignora supply_item_id en el body
+    return apiPost<SupplyItem>(`/api/supply-items/${encodeURIComponent(dto.supply_item_id)}/cubrir`, {
+      cantidad_a_cubrir: dto.cantidad_a_cubrir,
+      donor_id: dto.donor_id,
+    });
   }
 }

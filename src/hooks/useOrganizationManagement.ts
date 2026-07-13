@@ -8,8 +8,10 @@ export const useOrganizationManagement = () => {
     organizations: storeOrgs,
     fetchOrganizations,
     addOrganization: storeAddOrg,
+    updateOrganization: storeUpdateOrg,
     deleteOrganization: storeDeleteOrg,
   } = useOrganizationStore();
+
 
   const {
     events: storeEvents,
@@ -126,6 +128,24 @@ export const useOrganizationManagement = () => {
     }).catch(console.error);
   };
 
+  const updateOrganization = (orgId: string, updatedOrg: Partial<Omit<LocalOrg, 'id'>>): void => {
+    const dto: any = {};
+    if (updatedOrg.nombre !== undefined) dto.nombre = updatedOrg.nombre;
+    if (updatedOrg.direccion !== undefined) dto.direccion = updatedOrg.direccion;
+    if (updatedOrg.deficiencias_infraestructura !== undefined) dto.necesidades = updatedOrg.deficiencias_infraestructura;
+    if (updatedOrg.distrito !== undefined) dto.distrito = updatedOrg.distrito as PiuraDistrict;
+    if (updatedOrg.sector_demografico !== undefined) {
+      dto.tipo = updatedOrg.sector_demografico.toLowerCase().includes('comedor')
+        ? 'comedor'
+        : updatedOrg.sector_demografico.toLowerCase().includes('asilo')
+        ? 'asilo'
+        : updatedOrg.sector_demografico.toLowerCase().includes('vaso')
+        ? 'vaso_de_leche'
+        : 'otro';
+    }
+    storeUpdateOrg(orgId, dto).catch(console.error);
+  };
+
   const deleteOrganization = (orgId: string): void => {
     storeDeleteOrg(orgId).catch(console.error);
   };
@@ -134,8 +154,10 @@ export const useOrganizationManagement = () => {
     organizations,
     orgEvents,
     addOrganization,
+    updateOrganization,
     addSocialEvent,
     updateEventStatus,
     deleteOrganization,
   };
 };
+

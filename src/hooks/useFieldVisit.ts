@@ -80,7 +80,13 @@ export function useFieldVisit(eventId?: string) {
    * Cierra el evento de campo y registra las evidencias finales.
    * Cambia el status del evento a `realizada`.
    *
-   * @param dto DTO con las URLs de evidencia (ya subidas) y notas de cierre.
+   * El body que se envía al backend tiene el formato:
+   * ```json
+   * { "evidences": [{ "tipo": "foto_canasta", "url": "https://...", "descripcion": "..." }] }
+   * ```
+   * Los tipos válidos son: `"foto_canasta"`, `"foto_evidencia"`, `"firma"`.
+   *
+   * @param dto DTO con el array de evidencias (ya subidas al Storage).
    */
   const completeEvent = useCallback(
     (dto: CompleteEventDTO) => {

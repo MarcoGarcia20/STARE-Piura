@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FundBalances, BalanceMovement, FundSourceType, MovementType } from '../types';
 import { 
   PiggyBank, 
@@ -14,6 +14,122 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useFinance } from '../features/finance';
+
+// ─── Componente Local: Contador Animado de Alta Fidelidad ───────────────────────
+const AnimatedCounter: React.FC<{ value: number }> = ({ value }) => {
+  const [displayValue, setDisplayValue] = useState(value);
+  const previousValueRef = useRef(value);
+
+  useEffect(() => {
+    const startValue = previousValueRef.current;
+    const endValue = value;
+    if (startValue === endValue) return;
+
+    const duration = 600; // ms
+    const startTime = performance.now();
+    let animationId: number;
+
+    const updateNumber = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = progress * (2 - progress); // EaseOutQuad
+
+      const current = startValue + (endValue - startValue) * easeProgress;
+      setDisplayValue(current);
+
+      if (progress < 1) {
+        animationId = requestAnimationFrame(updateNumber);
+      } else {
+        previousValueRef.current = endValue;
+      }
+    };
+
+    animationId = requestAnimationFrame(updateNumber);
+    return () => cancelAnimationFrame(animationId);
+  }, [value]);
+
+  return <span>S/. {displayValue.toFixed(2)}</span>;
+};
+
+// ─── Componente Local: Canvas de Partículas de Fondo Líquido ───────────────────
+const CanvasBackground: React.FC<{ color: string }> = ({ color }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = canvas.offsetWidth;
+    let height = canvas.offsetHeight;
+    canvas.width = width * window.devicePixelRatio;
+    canvas.height = height * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+    const particles: Array<{
+      x: number;
+      y: number;
+      radius: number;
+      speedY: number;
+      speedX: number;
+      opacity: number;
+    }> = Array.from({ length: 15 }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height + height,
+      radius: Math.random() * 2.5 + 0.8,
+      speedY: -(Math.random() * 0.35 + 0.08),
+      speedX: Math.random() * 0.16 - 0.08,
+      opacity: Math.random() * 0.35 + 0.08,
+    }));
+
+    let animationId: number;
+
+    const animate = () => {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, width, height);
+      
+      particles.forEach(p => {
+        p.y += p.speedY;
+        p.x += p.speedX;
+        
+        if (p.y < -10) {
+          p.y = height + 10;
+          p.x = Math.random() * width;
+        }
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = p.opacity;
+        ctx.fill();
+      });
+
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    const handleResize = () => {
+      if (!canvas || !ctx) return;
+      width = canvas.offsetWidth;
+      height = canvas.offsetHeight;
+      canvas.width = width * window.devicePixelRatio;
+      canvas.height = height * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [color]);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none -z-10" />;
+};
 
 interface KPICardsProps {
   balances?: FundBalances;
@@ -78,32 +194,33 @@ export const KPICards: React.FC<KPICardsProps> = ({
         <motion.div 
         id="card-caja-chica"
         whileHover={{ y: -2 }}
-        className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between"
+        className="bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-[var(--radius-xl)] p-6 shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-all relative overflow-hidden flex flex-col justify-between text-[var(--color-text-primary)]"
       >
-        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-full -mr-6 -mt-6 -z-10 opacity-70" />
+        <CanvasBackground color="rgba(16, 185, 129, 0.22)" />
+        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full -mr-6 -mt-6 -z-10 opacity-70" />
         <div>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-600 font-extrabold bg-emerald-100/60 px-2.5 py-1 rounded-full">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-600 font-extrabold bg-emerald-100/60 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full">
               Caja Chica Logística
             </span>
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+            <div className="p-2.5 bg-emerald-500/10 text-emerald-600 rounded-xl">
               <Truck className="w-5 h-5" />
             </div>
           </div>
-          <h4 className="text-xs font-sans font-medium text-slate-500">Rutas locales y combustibles</h4>
-          <h2 className="text-2xl font-sans font-bold text-slate-900 mt-1 tracking-tight">
-            S/. {(balances?.cajaChica ?? 0).toFixed(2)}
+          <h4 className="text-xs font-sans font-medium text-[var(--color-text-tertiary)]">Rutas locales y combustibles</h4>
+          <h2 className="text-2xl font-mono font-black text-[var(--color-text-primary)] mt-1 tracking-tight">
+            <AnimatedCounter value={balances?.cajaChica ?? 0} />
           </h2>
-          <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5 font-sans leading-relaxed">
+          <p className="text-[11px] text-[var(--color-text-tertiary)] mt-2 flex items-center gap-1.5 font-sans leading-relaxed">
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
             Gastos inmediatos de mototaxi y viáticos en Piura.
           </p>
         </div>
-        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+        <div className="mt-6 pt-4 border-t border-[var(--color-border)] flex items-center justify-between">
           <button 
             id="btn-gasto-caja"
             onClick={openQuickLogistics}
-            className="w-full bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 text-xs font-sans font-bold py-2.5 px-4 rounded-xl border border-slate-200 hover:border-emerald-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+            className="w-full bg-[var(--color-bg-secondary)] hover:bg-emerald-500/10 text-[var(--color-text-secondary)] hover:text-emerald-600 text-xs font-sans font-bold py-2.5 px-4 rounded-xl border border-[var(--color-border)] hover:border-emerald-250 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Plus className="w-4 h-4" /> Registrar Gasto/Ingreso
           </button>
@@ -114,32 +231,33 @@ export const KPICards: React.FC<KPICardsProps> = ({
       <motion.div 
         id="card-fondo-adquisicion"
         whileHover={{ y: -2 }}
-        className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between"
+        className="bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-[var(--radius-xl)] p-6 shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-all relative overflow-hidden flex flex-col justify-between text-[var(--color-text-primary)]"
       >
-        <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-full -mr-6 -mt-6 -z-10 opacity-70" />
+        <CanvasBackground color="rgba(99, 102, 241, 0.22)" />
+        <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full -mr-6 -mt-6 -z-10 opacity-70" />
         <div>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-600 font-extrabold bg-indigo-100/60 px-2.5 py-1 rounded-full">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-600 font-extrabold bg-indigo-100/60 dark:bg-indigo-500/10 px-2.5 py-1 rounded-full">
               Fondo de Adquisición
             </span>
-            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+            <div className="p-2.5 bg-indigo-500/10 text-indigo-600 rounded-xl">
               <PiggyBank className="w-5 h-5" />
             </div>
           </div>
-          <h4 className="text-xs font-sans font-medium text-slate-500">Balanceador de Bolsas</h4>
-          <h2 className="text-2xl font-sans font-bold text-slate-900 mt-1 tracking-tight">
-            S/. {(balances?.fondoAdquisicion ?? 0).toFixed(2)}
+          <h4 className="text-xs font-sans font-medium text-[var(--color-text-tertiary)]">Balanceador de Bolsas</h4>
+          <h2 className="text-2xl font-mono font-black text-[var(--color-text-primary)] mt-1 tracking-tight">
+            <AnimatedCounter value={balances?.fondoAdquisicion ?? 0} />
           </h2>
-          <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5 font-sans leading-relaxed">
+          <p className="text-[11px] text-[var(--color-text-tertiary)] mt-2 flex items-center gap-1.5 font-sans leading-relaxed">
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500" />
             Acumulado MYPE para comprar insumos faltantes.
           </p>
         </div>
-        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+        <div className="mt-6 pt-4 border-t border-[var(--color-border)] flex items-center justify-between">
           <button 
             id="btn-ingreso-fondo"
             onClick={openDirectCapital}
-            className="w-full bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-800 text-xs font-sans font-bold py-2.5 px-4 rounded-xl border border-slate-200 hover:border-indigo-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+            className="w-full bg-[var(--color-bg-secondary)] hover:bg-indigo-500/10 text-[var(--color-text-secondary)] hover:text-indigo-600 text-xs font-sans font-bold py-2.5 px-4 rounded-xl border border-[var(--color-border)] hover:border-indigo-250 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Plus className="w-4 h-4" /> Inyectar a Adquisición
           </button>

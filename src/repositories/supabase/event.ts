@@ -6,7 +6,9 @@ import type {
   SupplyItem,
   CreateSupplyItemDTO,
   UpdateSupplyItemDTO,
+  CoverSupplyItemDTO,
 } from '@/types/index';
+
 import {
   fetchEvents,
   fetchEventById,
@@ -59,4 +61,32 @@ export class SupabaseEventRepository implements IEventRepository {
   async updateSupplyItem(itemId: string, dto: UpdateSupplyItemDTO): Promise<SupplyItem> {
     return updateSupplyItem(itemId, dto as any) as Promise<SupplyItem>;
   }
+
+  async delete(id: string): Promise<void> {
+    const { deleteEvent } = await import('@/lib/supabase/events');
+    return deleteEvent(id);
+  }
+
+  async deleteSupplyItem(itemId: string): Promise<void> {
+    const { deleteSupplyItem } = await import('@/lib/supabase/supply-items');
+    return deleteSupplyItem(itemId);
+  }
+
+  async coverSupplyItem(dto: CoverSupplyItemDTO): Promise<SupplyItem> {
+    const supabase = requireSupabase();
+    // Llamar a la función RPC transaccional en Supabase
+    const { error } = await supabase.rpc('cubrir_suministro', {
+      p_item_id: dto.supply_item_id,
+    });
+    if (error) throw error;
+    // Cargar y retornar el item de suministros actualizado
+    const { data: itemData, error: itemError } = await supabase
+      .from('supply_items')
+      .select('*')
+      .eq('id', dto.supply_item_id)
+      .single();
+    if (itemError) throw itemError;
+    return itemData as SupplyItem;
+  }
 }
+

@@ -1,5 +1,5 @@
 import type { IDonorRepository } from '../contracts/donor';
-import type { Donor, CreateDonorDTO } from '@/types/index';
+import type { Donor, CreateDonorDTO, UpdateDonorDTO } from '@/types/index';
 import {
   fetchDonors,
   fetchDonorById,
@@ -23,4 +23,10 @@ export class SupabaseDonorRepository implements IDonorRepository {
   async create(dto: CreateDonorDTO): Promise<Donor> {
     return createDonor(dto as any) as Promise<Donor>;
   }
+
+  async update(id: string, dto: UpdateDonorDTO): Promise<Donor> {
+    const { updateDonor } = await import('@/lib/supabase/donors');
+    return updateDonor(id, dto as any) as Promise<Donor>;
+  }
 }
+

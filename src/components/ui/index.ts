@@ -45,3 +45,6 @@ export type { ToastMessage, ToastVariant } from './Toast';
 
 export { Dialog, ConfirmDialog } from './Dialog';
 export type { DialogProps, DialogSize, ConfirmDialogProps } from './Dialog';
+
+export { CanvasProgress } from './CanvasProgress';
+export { AppleSpinner } from './AppleSpinner';
